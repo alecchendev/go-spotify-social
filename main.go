@@ -2,32 +2,63 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
+var templateDir = "templates/"
+var templateFilenames = []string{
+	templateDir + "index.html",
+	templateDir + "bookmarks.html",
+	templateDir + "explore.html",
+	templateDir + "settings.html",
+	templateDir + "profile.html",
+}
+
+var templates = template.Must(template.ParseFiles(templateFilenames...))
+
+func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
+	err := templates.ExecuteTemplate(w, tmpl+".html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Spotify Social</h1>")
+	data := homeData{
+		Title: "Spotify Social",
+	}
+	renderTemplate(w, "index", data)
 }
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
 	pathVars := mux.Vars(r)
 	uri := pathVars["uri"]
-	fmt.Fprintf(w, "<h1>Profile: %v</h1>", uri)
+
+	// Retrieve profile data
+	// ...
+	data := profileData{
+		Uri: uri,
+	}
+	renderTemplate(w, "profile", data)
 }
 
 func bookmarksHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Bookmarks</h1>")
+	data := bookmarksData{}
+	renderTemplate(w, "bookmarks", data)
 }
 
 func exploreHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Explore</h1>")
+	data := exploreData{}
+	renderTemplate(w, "explore", data)
 }
 
 func settingsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Settings</h1>")
+	data := settingsData{}
+	renderTemplate(w, "settings", data)
 }
 
 func main() {
