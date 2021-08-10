@@ -7,6 +7,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	// .env
+	"os"
+
+	"github.com/joho/godotenv"
+
+	// db
+
+	"github.com/alecchendev/go-spotify-social/db"
 )
 
 var templateDir = "templates/"
@@ -63,6 +72,18 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
+	// Connect to db
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file.")
+	}
+	dbUri := os.Getenv("DB_URI")
+	dbName := os.Getenv("DB_NAME")
+	collectionName := os.Getenv("COLLECTION_NAME")
+	client, ctx := db.InitializeDBClient(dbUri, dbName, collectionName)
+	defer client.Disconnect(ctx)
+
+	// Serve pages
 	r := mux.NewRouter()
 	r.HandleFunc("/", homeHandler)
 	r.HandleFunc("/bookmarks", bookmarksHandler)
@@ -71,6 +92,7 @@ func main() {
 	r.HandleFunc("/{uri}", profileHandler)
 	http.Handle("/", r)
 
+	// // Start server
 	port := ":8080"
 	fmt.Println("Serving at port", port)
 	log.Fatal(http.ListenAndServe(port, nil))
