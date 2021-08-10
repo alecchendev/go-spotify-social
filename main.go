@@ -14,13 +14,8 @@ import (
 	"github.com/joho/godotenv"
 
 	// db
-	"context"
-	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"github.com/alecchendev/go-spotify-social/db"
 )
 
 var templateDir = "templates/"
@@ -79,28 +74,14 @@ func main() {
 
 	// Connect to db
 	err := godotenv.Load(".env")
-	mongoUri := os.Getenv("DB_URI")
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUri))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error loading .env file.")
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	dbUri := os.Getenv("DB_URI")
+	dbName := os.Getenv("DB_NAME")
+	collectionName := os.Getenv("COLLECTION_NAME")
+	client, ctx := db.InitializeDBClient(dbUri, dbName, collectionName)
 	defer client.Disconnect(ctx)
-
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	databases, err := client.ListDatabaseNames(ctx, bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(databases)
 
 	// Serve pages
 	r := mux.NewRouter()
@@ -111,7 +92,7 @@ func main() {
 	r.HandleFunc("/{uri}", profileHandler)
 	http.Handle("/", r)
 
-	// Start server
+	// // Start server
 	port := ":8080"
 	fmt.Println("Serving at port", port)
 	log.Fatal(http.ListenAndServe(port, nil))
